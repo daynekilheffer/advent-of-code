@@ -1,0 +1,1 @@
+4.1 didn't solve the first input, so I'm assuming there is some break in the logic around only considering previous/current/next.  I've created another version which reads the entire grid into memory to see if there is an obvious issue I'm not considering.

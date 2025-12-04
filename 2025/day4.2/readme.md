@@ -1,0 +1,1 @@
+My "optimization" for 4.1 to only look at the previous, current and next row when evaluating "forklift-ability" resulted in issues with re-evaluation of the entire grid.  I ended up picking up from 4.1.1 as I needed the entire grid.
