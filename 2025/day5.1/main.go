@@ -4,15 +4,29 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"slices"
+	"strconv"
+	"strings"
 )
 
-type Range struct {
+type InventoryRange struct {
 	start int64
 	end   int64
 }
 
-func (r Range) Contains(value int64) bool {
+func (r InventoryRange) Contains(value int64) bool {
 	return value >= r.start && value <= r.end
+}
+
+type InventoryList []InventoryRange
+
+func (inv *InventoryList) IsItemFresh(item int64) bool {
+	if inv == nil {
+		return false
+	}
+	return slices.ContainsFunc(*inv, func(ir InventoryRange) bool {
+		return ir.Contains(item)
+	})
 }
 
 func main() {
@@ -25,10 +39,36 @@ func main() {
 	scanner := bufio.NewScanner(file)
 
 	total := int64(0)
+	freshInventory := InventoryList{}
 	for scanner.Scan() {
-		row := scanner.Text()
-		_ = row
+		inventoryRow := scanner.Text()
+		if inventoryRow == "" {
+			break
+		}
+
+		inventoryParts := strings.SplitN(inventoryRow, "-", 2)
+		start, err := strconv.ParseInt(inventoryParts[0], 10, 64)
+		if err != nil {
+			panic(err)
+		}
+		end, err := strconv.ParseInt(inventoryParts[1], 10, 64)
+		if err != nil {
+			panic(err)
+		}
+		freshInventory = append(freshInventory, InventoryRange{
+			start: start,
+			end:   end,
+		})
 	}
-	fmt.Println("Final rows:")
+	for scanner.Scan() {
+		itemRow := scanner.Text()
+		item, err := strconv.ParseInt(itemRow, 10, 64)
+		if err != nil {
+			panic(err)
+		}
+		if freshInventory.IsItemFresh(item) {
+			total++
+		}
+	}
 	fmt.Printf("Total: %d\n", total)
 }
