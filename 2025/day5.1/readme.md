@@ -1,0 +1,1 @@
+I'm making the assumption that I can't run all of the ranges into a map[int]bool, but I could be wrong
