@@ -34,14 +34,37 @@ func (inv *InventoryList) CountUniqueItems(item int64) int64 {
 		return 0
 	}
 	count := int64(0)
-	seenIds := make(map[int64]struct{})
-	for _, invRange := range *inv {
-		for i := invRange.start; i <= invRange.end; i++ {
-			if _, ok := seenIds[i]; !ok {
-				seenIds[i] = struct{}{}
-				count++
+	ilist := *inv
+	slices.SortStableFunc(ilist, func(a, b InventoryRange) int {
+		if a.start < b.start {
+			return -1
+		} else if a.start > b.start {
+			return 1
+		}
+		return 0
+	})
+	for i := range ilist {
+		newStart := ilist[i].start
+		// if any previous range contains this start, skip to the end of that range
+		for j := range i {
+			if ilist[j].Contains(newStart) {
+				newStart = ilist[j].end + 1
 			}
 		}
+		if newStart > ilist[i].end {
+			continue
+		}
+		newEnd := ilist[i].end
+		// if any previous range contains this end, shorten to the start of that range
+		for j := range i {
+			if ilist[j].Contains(newEnd) {
+				newEnd = ilist[j].start - 1
+			}
+		}
+		if newEnd < newStart {
+			continue
+		}
+		count += (newEnd - newStart + 1)
 	}
 	return count
 }
