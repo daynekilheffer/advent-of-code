@@ -2,7 +2,10 @@ package main
 
 import (
 	"bufio"
+	"fmt"
 	"os"
+	"regexp"
+	"slices"
 	"strconv"
 	"strings"
 )
@@ -38,20 +41,32 @@ func main() {
 	defer file.Close()
 	scanner := bufio.NewScanner(file)
 
-	var problems []MathProblem
+	var rows []string
 	for scanner.Scan() {
-		row := strings.TrimSpace(scanner.Text())
+		row := scanner.Text()
+		rows = append(rows, row)
+	}
+	operationRow := rows[len(rows)-1]
+	operationFields := regexp.MustCompile(`[*+]\s+`).FindAllString(operationRow, -1)
+	fieldLengths := make([]int, len(operationFields))
+	for i, field := range operationFields {
+		fieldLengths[i] = len(field)
+	}
 
-		// split by any series of spaces
-		fields := strings.Fields(row)
-		if problems == nil {
-			problems = make([]MathProblem, len(fields))
+	problems := make([]MathProblem, len(operationFields))
+	for _, row := range rows {
+
+		fields := extractRowToFields(row, fieldLengths)
+		for _, v := range fields {
+			fmt.Printf("%q ", v)
 		}
+		fmt.Println()
 
 		if isOperationRow(row) {
 			for idx, field := range fields {
 				problem := &problems[idx]
-				switch field {
+				op := strings.TrimSpace(field)
+				switch op {
 				case "+":
 					problem.op = add
 				case "*":
@@ -83,9 +98,42 @@ func main() {
 	println("Total:", total)
 }
 
+func extractRowToFields(row string, fieldLengths []int) []string {
+	var fields []string
+	currentIndex := 0
+	for _, length := range fieldLengths {
+		if currentIndex+length > len(row) {
+			fields = append(fields, row[currentIndex:])
+			break
+		}
+		field := row[currentIndex : currentIndex+length]
+		fields = append(fields, field)
+		currentIndex += length
+	}
+	return fields
+}
+
 func convertValuesToInt64(values []string) []int64 {
 	var numbers []int64
-	for _, value := range values {
+	longestWord := slices.MaxFunc(values, func(a, b string) int { return len(a) - len(b) })
+	longestWordLength := len(longestWord)
+	fmt.Println("values", values)
+
+	extractedValues := make([]string, 0, len(values[0]))
+	for i := range longestWordLength {
+		var sb strings.Builder
+		for _, value := range values {
+			if i < len(value) && value[i] != ' ' {
+				sb.WriteByte(value[i])
+			}
+		}
+		if sb.Len() == 0 {
+			continue
+		}
+		extractedValues = append(extractedValues, sb.String())
+	}
+	fmt.Println("extractedValues", extractedValues)
+	for _, value := range extractedValues {
 		num, err := strconv.ParseInt(value, 10, 64)
 		if err != nil {
 			panic(err)
